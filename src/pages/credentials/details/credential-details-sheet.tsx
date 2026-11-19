@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { queryKeys } from "@/lib/queries"
 import { useClient } from "@/lib/session"
 import { CredentialList, type Credential } from "@/lib/schemas"
+import { QuotaDetail } from "@/components/quota/quota-detail"
 import { CredentialModelsDialog } from "@/pages/credentials/details/credential-models-dialog"
 
 const Alias = z.object({
@@ -448,6 +449,7 @@ function DetailsBody({
           <TabsList variant="line" className="w-full">
             <TabsTrigger value="overview">{t("details.overview")}</TabsTrigger>
             <TabsTrigger value="settings">{t("details.settings")}</TabsTrigger>
+            <TabsTrigger value="quota">{t("details.quota")}</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="flex flex-col gap-4 pt-4">
             <div className="flex items-center gap-2">
@@ -493,6 +495,9 @@ function DetailsBody({
               </Alert>
             )}
             <SettingsForm draft={draft} errors={errors} disabled={readOnly || save.isPending} update={update} provider={detail.provider} />
+          </TabsContent>
+          <TabsContent value="quota" className="pt-4">
+            <QuotaDetail credential={detail} />
           </TabsContent>
         </Tabs>
       )}

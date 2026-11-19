@@ -55,11 +55,13 @@ export interface Client {
   patch(path: string, body?: unknown, options?: WriteOptions): Promise<unknown>
   del(path: string, body?: unknown, options?: WriteOptions): Promise<unknown>
   download(path: string): Promise<Blob>
+  isCurrent(): boolean
 }
 
 export type ClientHooks = {
   onServerInfo?: (info: ServerInfo) => void
   onUnauthorized?: () => void
+  isCurrent?: () => boolean
 }
 
 export function createClient(connection: Connection, hooks: ClientHooks = {}): Client {
@@ -103,5 +105,6 @@ export function createClient(connection: Connection, hooks: ClientHooks = {}): C
     patch: async (path, body, options) => (await request("PATCH", path, body, options)).data,
     del: async (path, body, options) => (await request("DELETE", path, body, options)).data,
     download: async (path) => (await send("GET", path)).blob(),
+    isCurrent: () => hooks.isCurrent?.() ?? true,
   }
 }

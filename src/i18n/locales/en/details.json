@@ -79,5 +79,6 @@
   "cooldownReason": "Reason: {{reason}}",
   "cooldownRetry": "Retry at {{time}}",
   "credential": "credential",
-  "model": "model"
+  "model": "model",
+  "quota": "Quota"
 }

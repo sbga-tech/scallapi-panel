@@ -18,6 +18,7 @@ import { useNow } from "@/hooks/use-now"
 import { credentialIdentity, credentialState, stateTone } from "@/lib/credential-status"
 import { formatBytes, formatDuration, formatRelative } from "@/lib/format"
 import type { Credential } from "@/lib/schemas"
+import { QuotaSummary } from "@/components/quota/quota-summary"
 import { cn } from "@/lib/utils"
 
 export type Density = "regular" | "compact"
@@ -176,6 +177,8 @@ export function CredentialCard({
             )}
           </div>
         )}
+
+        <QuotaSummary credential={credential} density={density} />
       </div>
 
       <div className="mt-auto flex items-center gap-1 border-t px-2.5 py-1.5">

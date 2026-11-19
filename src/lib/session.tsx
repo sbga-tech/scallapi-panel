@@ -35,37 +35,60 @@ function forget() {
   sessionStorage.removeItem(storageKey)
 }
 
+const active: { connection: Connection | null } = { connection: null }
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
-  const [connection, setConnection] = useState<Connection | null>(() => readStored())
+  const [initial] = useState(() => {
+    active.connection = readStored()
+    return active.connection
+  })
+  const [connection, setConnection] = useState<Connection | null>(initial)
   const [server, setServerState] = useState<ServerInfo>({ version: null, buildDate: null })
   const setServer = useCallback(
     (next: ServerInfo) =>
-      setServerState((current) => (current.version === next.version && current.buildDate === next.buildDate ? current : next)),
+      setServerState((value) => (value.version === next.version && value.buildDate === next.buildDate ? value : next)),
     []
   )
 
-  const session = useMemo<Session>(() => {
-    function signOut() {
-      forget()
+  const switchTo = useCallback(
+    (next: Connection | null) => {
+      active.connection = next
       queryClient.clear()
-      setConnection(null)
-    }
-    return {
+      setConnection(next)
+    },
+    [queryClient]
+  )
+
+  const signOut = useCallback(() => {
+    forget()
+    switchTo(null)
+  }, [switchTo])
+
+  const client = useMemo(
+    () =>
+      connection
+        ? createClient(connection, { onServerInfo: setServer, onUnauthorized: signOut, isCurrent: () => active.connection === connection })
+        : null,
+    [connection, setServer, signOut]
+  )
+
+  const session = useMemo<Session>(
+    () => ({
       connection,
-      client: connection ? createClient(connection, { onServerInfo: setServer, onUnauthorized: signOut }) : null,
+      client,
       server,
       async signIn(next, remember) {
         const normalized = { base: normalizeBase(next.base), key: next.key }
         await createClient(normalized, { onServerInfo: setServer }).get("/config")
         forget()
         ;(remember ? localStorage : sessionStorage).setItem(storageKey, JSON.stringify({ ...normalized, remember }))
-        queryClient.clear()
-        setConnection(normalized)
+        switchTo(normalized)
       },
       signOut,
-    }
-  }, [connection, server, queryClient, setServer])
+    }),
+    [connection, client, server, setServer, switchTo, signOut]
+  )
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }

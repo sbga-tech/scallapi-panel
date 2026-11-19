@@ -79,5 +79,6 @@
   "cooldownReason": "原因：{{reason}}",
   "cooldownRetry": "将在 {{time}} 重试",
   "credential": "凭据",
-  "model": "模型"
+  "model": "模型",
+  "quota": "额度"
 }
