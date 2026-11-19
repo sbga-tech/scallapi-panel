@@ -57,7 +57,12 @@ export interface Client {
   download(path: string): Promise<Blob>
 }
 
-export function createClient(connection: Connection, onServerInfo?: (info: ServerInfo) => void): Client {
+export type ClientHooks = {
+  onServerInfo?: (info: ServerInfo) => void
+  onUnauthorized?: () => void
+}
+
+export function createClient(connection: Connection, hooks: ClientHooks = {}): Client {
   const root = `${normalizeBase(connection.base)}${managementPrefix}`
 
   async function readBody(response: Response): Promise<unknown> {
@@ -75,10 +80,11 @@ export function createClient(connection: Connection, onServerInfo?: (info: Serve
       payload = JSON.stringify(body)
     }
     const response = await fetch(`${root}${path}`, { method, headers, body: payload })
-    onServerInfo?.({
+    hooks.onServerInfo?.({
       version: response.headers.get("x-cpa-version") ?? response.headers.get("x-server-version"),
       buildDate: response.headers.get("x-cpa-build-date") ?? response.headers.get("x-server-build-date"),
     })
+    if (response.status === 401) hooks.onUnauthorized?.()
     if (!response.ok) throw parseError(response.status, await readBody(response), response.statusText)
     return response
   }

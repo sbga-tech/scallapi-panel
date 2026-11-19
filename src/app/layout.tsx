@@ -53,17 +53,18 @@ export function AppLayout() {
 
 function AppSidebar() {
   const { t } = useTranslation()
+  const { pathname } = useLocation()
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<NavLink to="/credentials" />}>
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-medium text-primary-foreground">
                 S
               </div>
               <div className="grid flex-1 text-left leading-tight">
-                <span className="truncate font-semibold">scallapi</span>
+                <span className="truncate font-medium">scallapi</span>
                 <span className="truncate text-xs text-muted-foreground">{t("app.subtitle")}</span>
               </div>
             </SidebarMenuButton>
@@ -82,7 +83,7 @@ function AppSidebar() {
                       <SidebarMenuButton
                         tooltip={t(`nav.${item.key}`)}
                         render={<NavLink to={item.path} />}
-                        isActive={location.pathname.startsWith(item.path)}
+                        isActive={pathname.startsWith(item.path)}
                       >
                         <item.icon />
                         <span>{t(`nav.${item.key}`)}</span>

@@ -53,23 +53,3 @@ export function useSaveRoutes() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.routes }),
   })
 }
-
-export function useSetCredentialDisabled() {
-  const client = useClient()
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ name, authIndex, disabled }: { name: string; authIndex?: string; disabled: boolean }) =>
-      client.patch("/credentials/status", { name, auth_index: authIndex, disabled }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.credentials }),
-  })
-}
-
-export function useRefreshCredential() {
-  const client = useClient()
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ name, authIndex }: { name: string; authIndex?: string }) =>
-      client.post("/credentials/refresh", { name, auth_index: authIndex }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.credentials }),
-  })
-}

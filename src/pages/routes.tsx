@@ -1,4 +1,4 @@
-import { Check, Plus, Trash2 } from "lucide-react"
+import { Check, KeyRound, Plus, Trash2, UserRound } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -28,21 +27,13 @@ import { toast } from "@/components/ui/toast"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ApiError } from "@/lib/api"
 import { useApiKeyFamilies, useCredentials, useRoutes, useSaveRoutes } from "@/lib/queries"
-import type { ApiKeyFamilies, Credential, RouteConfig } from "@/lib/schemas"
+import { candidateState, routeCandidates, type RouteCandidate } from "@/lib/route-candidates"
+import type { RouteConfig } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 
 const newRouteKey = "~new"
-
-type KeyGroup = { provider: string; label: string }
-
-function keyGroups(families: ApiKeyFamilies): KeyGroup[] {
-  return Object.entries(families).flatMap(([family, groups]) =>
-    groups.map((group, index) => ({
-      provider: family === "openai-compatibility" ? group.name.toLowerCase() : family,
-      label: group.name || `${family} ${index + 1}`,
-    }))
-  )
-}
+const emptyRoute: RouteConfig = { name: "", path: "", "rewrite-to": "", providers: [], credentials: [] }
+const prefixPattern = /^\/.*[^/]$/
 
 export function RoutesPage() {
   const { t } = useTranslation()
@@ -53,6 +44,7 @@ export function RoutesPage() {
   const families = useApiKeyFamilies()
   const list = routes.data?.data ?? []
   const selectedName = params.name ?? list[0]?.name ?? newRouteKey
+  const candidates = useMemo(() => routeCandidates(credentials.data ?? [], families.data?.data ?? {}), [credentials.data, families.data])
 
   return (
     <>
@@ -65,15 +57,27 @@ export function RoutesPage() {
           </Button>
         }
       />
-      <div className="grid flex-1 gap-6 p-4 md:p-6 lg:grid-cols-[18rem_1fr]">
-        <nav aria-label={t("nav.routes")} className="flex flex-col gap-1">
-          {routes.isPending && <Skeleton className="h-24 w-full" />}
+      <div className="grid flex-1 items-start gap-6 p-4 md:p-6 lg:grid-cols-[16rem_1fr]">
+        <nav aria-label={t("nav.routes")} className="flex flex-col gap-0.5">
+          {routes.isPending && <Skeleton className="h-20 w-full" />}
           {list.map((route) => (
-            <RouteLink key={route.name} route={route} active={route.name === selectedName} onSelect={() => navigate(`/routes/${route.name}`)} />
+            <button
+              key={route.name}
+              type="button"
+              onClick={() => navigate(`/routes/${route.name}`)}
+              aria-current={route.name === selectedName ? "page" : undefined}
+              className={cn(
+                "flex flex-col gap-0.5 rounded-md px-2.5 py-2 text-left text-xs transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none",
+                route.name === selectedName && "bg-muted"
+              )}
+            >
+              <span className="font-medium">{route.name}</span>
+              <span className="font-mono text-muted-foreground">{route.path}</span>
+            </button>
           ))}
-          <div className="mt-2 rounded-lg border border-dashed px-3 py-2.5">
-            <div className="text-sm font-medium">{t("routes.default")}</div>
-            <div className="text-xs text-muted-foreground">{t("routes.defaultDescription")}</div>
+          <div className="mt-2 flex flex-col gap-0.5 rounded-md border border-dashed px-2.5 py-2 text-xs">
+            <span className="font-medium">{t("routes.default")}</span>
+            <span className="text-muted-foreground">{t("routes.defaultDescription")}</span>
           </div>
         </nav>
 
@@ -88,8 +92,7 @@ export function RoutesPage() {
             routes={list}
             etag={routes.data.etag}
             original={list.find((route) => route.name === selectedName)}
-            credentials={credentials.data ?? []}
-            groups={keyGroups(families.data?.data ?? {})}
+            candidates={candidates}
           />
         ) : (
           <Skeleton className="h-96 w-full" />
@@ -99,65 +102,45 @@ export function RoutesPage() {
   )
 }
 
-function RouteLink({ route, active, onSelect }: { route: RouteConfig; active: boolean; onSelect: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex flex-col gap-0.5 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-        active && "bg-muted"
-      )}
-    >
-      <span className="text-sm font-medium">{route.name}</span>
-      <span className="font-mono text-xs text-muted-foreground">{route.path}</span>
-    </button>
-  )
-}
-
-const emptyRoute: RouteConfig = { name: "", path: "", "rewrite-to": "", providers: [], "auth-files": [] }
-
 function RouteEditor({
   routes,
   etag,
   original,
-  credentials,
-  groups,
+  candidates,
 }: {
   routes: RouteConfig[]
   etag: string | null
   original: RouteConfig | undefined
-  credentials: Credential[]
-  groups: KeyGroup[]
+  candidates: RouteCandidate[]
 }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const save = useSaveRoutes()
   const [draft, setDraftState] = useState<RouteConfig>(original ?? emptyRoute)
   const [error, setError] = useState<string | null>(null)
+  const isNew = !original
+  const dirty = JSON.stringify(draft) !== JSON.stringify(original ?? emptyRoute)
+  const providerOptions = [...new Set(candidates.map((candidate) => candidate.provider))].sort()
+  const serving = candidates.filter((candidate) => candidateState(draft, candidate) === "serving")
+
   function setDraft(next: RouteConfig) {
     setDraftState(next)
     setError(null)
   }
 
-  const providerOptions = useMemo(
-    () => [...new Set([...credentials.map((credential) => credential.provider), ...groups.map((group) => group.provider)])].sort(),
-    [credentials, groups]
-  )
-  const providerAllowed = (provider: string) => draft.providers.length === 0 || draft.providers.includes(provider.toLowerCase())
-  const fileSelected = (name: string) => draft["auth-files"].length === 0 || draft["auth-files"].includes(name)
-  const matchedFiles = credentials.filter((credential) => providerAllowed(credential.provider) && fileSelected(credential.name))
-  const matchedGroups = draft["auth-files"].length === 0 ? groups.filter((group) => providerAllowed(group.provider)) : []
-  const dirty = JSON.stringify(draft) !== JSON.stringify(original ?? emptyRoute)
-  const isNew = !original
+  function toggleCredential(selector: string, checked: boolean) {
+    setDraft({
+      ...draft,
+      credentials: checked ? [...draft.credentials, selector] : draft.credentials.filter((name) => name !== selector),
+    })
+  }
 
-  function validate(): string | null {
+  function validate() {
     if (!draft.name.trim()) return t("routes.errors.name")
     if (routes.some((route) => route.name === draft.name && route !== original)) return t("routes.errors.nameTaken")
-    if (!/^\/.*[^/]$/.test(draft.path)) return t("routes.errors.path")
+    if (!prefixPattern.test(draft.path)) return t("routes.errors.path")
     if (routes.some((route) => route.path === draft.path && route !== original)) return t("routes.errors.pathTaken")
-    if (draft["rewrite-to"] && !/^\/.*[^/]$/.test(draft["rewrite-to"])) return t("routes.errors.rewrite")
+    if (draft["rewrite-to"] && !prefixPattern.test(draft["rewrite-to"])) return t("routes.errors.rewrite")
     return null
   }
 
@@ -175,8 +158,7 @@ function RouteEditor({
   function submit() {
     const problem = validate()
     if (problem) return setError(problem)
-    const next = isNew ? [...routes, draft] : routes.map((route) => (route === original ? draft : route))
-    persist(next, () => {
+    persist(isNew ? [...routes, draft] : routes.map((route) => (route === original ? draft : route)), () => {
       toast.add({ title: t("routes.saved", { name: draft.name }), type: "success" })
       navigate(`/routes/${draft.name}`, { replace: true })
     })
@@ -192,139 +174,103 @@ function RouteEditor({
     )
   }
 
-  const samplePath = draft.path ? `${draft.path}/chat/completions` : "/v1/cyber/chat/completions"
-  const rewritten = draft.path ? `${draft["rewrite-to"]}/chat/completions` : ""
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isNew ? t("routes.newTitle") : draft.name || original?.name}</CardTitle>
-        <CardDescription>
-          {t("routes.matches", {
-            files: t("routes.matchesFiles", { count: matchedFiles.length }),
-            groups: t("routes.matchesGroups", { count: matchedGroups.length }),
-          })}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-8">
-        <FieldGroup className="grid gap-4 md:grid-cols-3">
-          <Field>
-            <FieldLabel htmlFor="route-name">{t("routes.name")}</FieldLabel>
-            <Input id="route-name" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="route-path">{t("routes.path")}</FieldLabel>
-            <Input
-              id="route-path"
-              className="font-mono"
-              placeholder="/v1/cyber"
-              value={draft.path}
-              onChange={(event) => setDraft({ ...draft, path: event.target.value })}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="route-rewrite">{t("routes.rewrite")}</FieldLabel>
-            <Input
-              id="route-rewrite"
-              className="font-mono"
-              placeholder="/v1"
-              value={draft["rewrite-to"]}
-              onChange={(event) => setDraft({ ...draft, "rewrite-to": event.target.value })}
-            />
-          </Field>
-          <FieldDescription className="font-mono text-xs md:col-span-3">
-            {samplePath} → {rewritten || "/chat/completions"}
+    <div className="flex max-w-3xl flex-col gap-8">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-medium">{isNew ? t("routes.newTitle") : original?.name}</h2>
+        <p className="text-xs text-muted-foreground">{t("routes.servedBy", { count: serving.length })}</p>
+      </div>
+
+      <FieldGroup className="grid gap-4 sm:grid-cols-3">
+        <Field>
+          <FieldLabel htmlFor="route-name">{t("routes.name")}</FieldLabel>
+          <Input id="route-name" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="route-path">{t("routes.path")}</FieldLabel>
+          <Input id="route-path" className="font-mono" placeholder="/v1/cyber" value={draft.path} onChange={(event) => setDraft({ ...draft, path: event.target.value })} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="route-rewrite">{t("routes.rewrite")}</FieldLabel>
+          <Input
+            id="route-rewrite"
+            className="font-mono"
+            placeholder="/v1"
+            value={draft["rewrite-to"]}
+            onChange={(event) => setDraft({ ...draft, "rewrite-to": event.target.value })}
+          />
+        </Field>
+        {draft.path && (
+          <FieldDescription className="font-mono sm:col-span-3">
+            {draft.path}/chat/completions → {draft["rewrite-to"]}/chat/completions
           </FieldDescription>
-        </FieldGroup>
-
-        <FieldSet>
-          <FieldLegend variant="label">{t("routes.providers")}</FieldLegend>
-          <FieldDescription>{draft.providers.length === 0 ? t("routes.allProviders") : t("routes.someProviders")}</FieldDescription>
-          <ToggleGroup
-            multiple
-            variant="outline"
-            value={draft.providers}
-            onValueChange={(value) => setDraft({ ...draft, providers: value as string[] })}
-            className="flex-wrap justify-start"
-          >
-            {providerOptions.map((provider) => (
-              <ToggleGroupItem
-                key={provider}
-                value={provider.toLowerCase()}
-                size="sm"
-                className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-              >
-                {draft.providers.includes(provider.toLowerCase()) && <Check />}
-                {provider}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </FieldSet>
-
-        <FieldSet>
-          <FieldLegend variant="label">{t("routes.credentials")}</FieldLegend>
-          <FieldDescription>{draft["auth-files"].length === 0 ? t("routes.allFiles") : t("routes.someFiles", { count: draft["auth-files"].length })}</FieldDescription>
-          <div className="divide-y rounded-lg border">
-            {credentials.map((credential) => {
-              const excluded = !providerAllowed(credential.provider)
-              const checked = draft["auth-files"].includes(credential.name)
-              return (
-                <label
-                  key={credential.name}
-                  className={cn("flex items-center gap-3 px-3 py-2.5", excluded ? "text-muted-foreground" : "cursor-pointer hover:bg-muted/50")}
-                >
-                  <Checkbox
-                    checked={checked}
-                    disabled={excluded}
-                    onCheckedChange={(value) =>
-                      setDraft({
-                        ...draft,
-                        "auth-files": value
-                          ? [...draft["auth-files"], credential.name]
-                          : draft["auth-files"].filter((name) => name !== credential.name),
-                      })
-                    }
-                  />
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-sm">{credential.email ?? credential.label ?? credential.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {credential.provider} · {credential.name}
-                    </span>
-                  </div>
-                  {excluded ? (
-                    <span className="text-xs">{t("routes.excludedByProvider")}</span>
-                  ) : fileSelected(credential.name) ? (
-                    <Badge variant="secondary">{t("routes.matched")}</Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">{t("routes.notSelected")}</span>
-                  )}
-                </label>
-              )
-            })}
-            {groups.map((group) => {
-              const matched = matchedGroups.includes(group)
-              return (
-                <div key={`${group.provider}:${group.label}`} className="flex items-center gap-3 px-3 py-2.5 text-muted-foreground">
-                  <Checkbox checked={false} disabled aria-label={group.label} />
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-sm text-foreground">{group.label}</span>
-                    <span className="truncate text-xs">{t("routes.apiKeyGroup", { provider: group.provider })}</span>
-                  </div>
-                  {matched ? <Badge variant="secondary">{t("routes.matched")}</Badge> : <span className="text-xs">{t("routes.keysByProviderOnly")}</span>}
-                </div>
-              )
-            })}
-          </div>
-        </FieldSet>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertTitle>{t("routes.saveFailed")}</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
         )}
-      </CardContent>
-      <CardFooter className="justify-between gap-2 border-t">
+      </FieldGroup>
+
+      <FieldSet>
+        <FieldLegend variant="label">{t("routes.providers")}</FieldLegend>
+        <FieldDescription>{draft.providers.length === 0 ? t("routes.allProviders") : t("routes.someProviders")}</FieldDescription>
+        <ToggleGroup
+          multiple
+          variant="outline"
+          size="sm"
+          value={draft.providers}
+          onValueChange={(value) => setDraft({ ...draft, providers: value as string[] })}
+          className="flex-wrap justify-start"
+        >
+          {providerOptions.map((provider) => (
+            <ToggleGroupItem key={provider} value={provider} className="aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground">
+              {draft.providers.includes(provider) && <Check />}
+              {provider}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </FieldSet>
+
+      <FieldSet>
+        <FieldLegend variant="label">{t("routes.credentials")}</FieldLegend>
+        <FieldDescription>
+          {draft.credentials.length === 0 ? t("routes.allCredentials") : t("routes.someCredentials", { count: draft.credentials.length })}
+        </FieldDescription>
+        <div className="divide-y rounded-md border">
+          {candidates.map((candidate) => {
+            const state = candidateState(draft, candidate)
+            const selectable = candidate.selector !== null && state !== "providerExcluded"
+            const Icon = candidate.kind === "oauth" ? UserRound : KeyRound
+            return (
+              <label
+                key={candidate.id}
+                className={cn("flex items-center gap-3 px-3 py-2 text-xs", selectable ? "cursor-pointer hover:bg-muted/50" : "text-muted-foreground")}
+              >
+                <Checkbox
+                  checked={candidate.selector !== null && draft.credentials.includes(candidate.selector)}
+                  disabled={!selectable}
+                  onCheckedChange={(value) => candidate.selector && toggleCredential(candidate.selector, value === true)}
+                />
+                <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className={cn("truncate", selectable && "text-foreground")}>{candidate.title}</span>
+                  <span className="truncate text-muted-foreground">
+                    {candidate.kind === "oauth"
+                      ? t("routes.oauthDetail", { provider: candidate.provider, file: candidate.detail })
+                      : t("routes.apiKeyDetail", { family: t(`family.${candidate.detail}`, { defaultValue: candidate.detail }), count: candidate.keyCount })}
+                  </span>
+                </div>
+                {state === "serving" ? <Badge variant="secondary">{t("routes.state.serving")}</Badge> : <span>{t(`routes.state.${state}`)}</span>}
+              </label>
+            )
+          })}
+        </div>
+      </FieldSet>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>{t("routes.saveFailed")}</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex items-center justify-between gap-2 border-t pt-4">
         {isNew ? (
           <span />
         ) : (
@@ -356,7 +302,7 @@ function RouteEditor({
             {t("routes.save")}
           </Button>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   )
 }

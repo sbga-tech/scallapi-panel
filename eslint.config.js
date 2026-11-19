@@ -20,6 +20,7 @@ export default defineConfig([
     },
     rules: {
       'react-refresh/only-export-components': 'off',
+      'no-restricted-globals': ['error', 'name', 'status', 'event', 'length', 'origin', 'parent', 'top', 'self', 'close', 'open', 'history', 'location'],
     },
   },
 ])

@@ -46,7 +46,7 @@ export function LoginPage() {
     <main className="flex min-h-svh items-center justify-center bg-muted/40 p-6">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-xl">{t("login.title")}</CardTitle>
+          <CardTitle className="text-base">{t("login.title")}</CardTitle>
           <CardDescription>{t("login.description")}</CardDescription>
         </CardHeader>
         <CardContent>

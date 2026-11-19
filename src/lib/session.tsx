@@ -1,10 +1,12 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react"
+import { z } from "zod"
 
 import { createClient, normalizeBase, type Client, type Connection, type ServerInfo } from "@/lib/api"
 
 const storageKey = "scallapi-panel.connection"
 
-type StoredConnection = Connection & { remember: boolean }
+const StoredConnection = z.object({ base: z.string(), key: z.string(), remember: z.boolean() })
 
 type Session = {
   connection: Connection | null
@@ -16,11 +18,11 @@ type Session = {
 
 const SessionContext = createContext<Session | null>(null)
 
-function readStored(): StoredConnection | null {
+function readStored(): Connection | null {
   const raw = localStorage.getItem(storageKey) ?? sessionStorage.getItem(storageKey)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as StoredConnection
+    return StoredConnection.parse(JSON.parse(raw))
   } catch {
     localStorage.removeItem(storageKey)
     sessionStorage.removeItem(storageKey)
@@ -28,34 +30,42 @@ function readStored(): StoredConnection | null {
   }
 }
 
+function forget() {
+  localStorage.removeItem(storageKey)
+  sessionStorage.removeItem(storageKey)
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [connection, setConnection] = useState<Connection | null>(() => readStored())
-  const [server, setServer] = useState<ServerInfo>({ version: null, buildDate: null })
+  const [server, setServerState] = useState<ServerInfo>({ version: null, buildDate: null })
+  const setServer = useCallback(
+    (next: ServerInfo) =>
+      setServerState((current) => (current.version === next.version && current.buildDate === next.buildDate ? current : next)),
+    []
+  )
 
-  const client = useMemo(() => (connection ? createClient(connection, setServer) : null), [connection])
-
-  const session = useMemo<Session>(
-    () => ({
+  const session = useMemo<Session>(() => {
+    function signOut() {
+      forget()
+      queryClient.clear()
+      setConnection(null)
+    }
+    return {
       connection,
-      client,
+      client: connection ? createClient(connection, { onServerInfo: setServer, onUnauthorized: signOut }) : null,
       server,
       async signIn(next, remember) {
         const normalized = { base: normalizeBase(next.base), key: next.key }
-        await createClient(normalized, setServer).get("/config")
-        const store = remember ? localStorage : sessionStorage
-        localStorage.removeItem(storageKey)
-        sessionStorage.removeItem(storageKey)
-        store.setItem(storageKey, JSON.stringify({ ...normalized, remember }))
+        await createClient(normalized, { onServerInfo: setServer }).get("/config")
+        forget()
+        ;(remember ? localStorage : sessionStorage).setItem(storageKey, JSON.stringify({ ...normalized, remember }))
+        queryClient.clear()
         setConnection(normalized)
       },
-      signOut() {
-        localStorage.removeItem(storageKey)
-        sessionStorage.removeItem(storageKey)
-        setConnection(null)
-      },
-    }),
-    [connection, client, server]
-  )
+      signOut,
+    }
+  }, [connection, server, queryClient, setServer])
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }

@@ -3,6 +3,23 @@ import { z } from "zod"
 const nullableString = z.string().nullish().transform((value) => value ?? undefined)
 const nullableNumber = z.number().nullish().transform((value) => value ?? undefined)
 
+const CooldownRecord = z.object({
+  scope: z.enum(["model", "credential"]),
+  model_key: z.string().optional(),
+  reason: z.string().optional().default("unknown"),
+  retry_at: z.string(),
+  remaining_seconds: z.number().int().positive(),
+  http_status: z.number().int().optional(),
+})
+export type CooldownRecord = z.infer<typeof CooldownRecord>
+
+const Cooldowns = z.unknown().transform((value): CooldownRecord[] | null => {
+  if (value === undefined || value === null) return []
+  const parsed = z.array(CooldownRecord).safeParse(value)
+  return parsed.success ? parsed.data : null
+})
+
+const RequestBucket = z.object({ time: z.string(), success: z.number(), failed: z.number() })
 export const Credential = z.looseObject({
   name: z.string(),
   id: z.string().optional(),
@@ -24,7 +41,15 @@ export const Credential = z.looseObject({
     .object({ code: nullableString, message: nullableString })
     .nullish()
     .transform((value) => value ?? undefined),
-  cooldowns: z.array(z.unknown()).nullish().transform((value) => value ?? []),
+  cooldowns: Cooldowns,
+  recent_requests: z.array(RequestBucket).nullish().transform((value) => value ?? []),
+  success: z.number().optional().default(0),
+  failed: z.number().optional().default(0),
+  size: nullableNumber,
+  siwc_bind_supported: z.boolean().optional().default(false),
+  siwc_bound: z.boolean().optional().default(false),
+  use_siwc: z.boolean().optional().default(false),
+  siwc_expires_at: nullableString,
   priority: nullableNumber,
   weight: nullableNumber,
   plan_type: nullableString,
@@ -44,7 +69,7 @@ export const RouteConfig = z.object({
   path: z.string(),
   "rewrite-to": z.string().optional().default(""),
   providers: z.array(z.string()).optional().default([]),
-  "auth-files": z.array(z.string()).optional().default([]),
+  credentials: z.array(z.string()).optional().default([]),
 })
 export type RouteConfig = z.infer<typeof RouteConfig>
 
