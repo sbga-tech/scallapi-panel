@@ -59,7 +59,7 @@ function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<NavLink to="/credentials" />}>
+            <SidebarMenuButton size="lg" render={<NavLink to="/upstreams" />}>
               <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-medium text-primary-foreground">
                 S
               </div>

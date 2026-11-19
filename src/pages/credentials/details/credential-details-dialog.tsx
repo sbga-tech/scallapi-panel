@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -15,14 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ProviderIcon } from "@/components/provider-icon"
+import { credentialState, stateTone, statusDetail } from "@/lib/credential-status"
+import { cn } from "@/lib/utils"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
@@ -322,7 +324,7 @@ function buildPatch(
   return patch
 }
 
-export function CredentialDetailsSheet({
+export function CredentialDetailsDialog({
   credential,
   open,
   onOpenChange,
@@ -352,8 +354,8 @@ export function CredentialDetailsSheet({
   const [tab, setTab] = useState("overview")
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[85vh] w-[min(52rem,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
         {detail ? (
           <DetailsBody
             key={`${detail.name}:${query.dataUpdatedAt}`}
@@ -364,12 +366,12 @@ export function CredentialDetailsSheet({
             onTabChange={setTab}
           />
         ) : (
-          <SheetHeader>
-            <SheetTitle>{t("details.title")}</SheetTitle>
-          </SheetHeader>
+          <DialogHeader>
+            <DialogTitle>{t("details.title")}</DialogTitle>
+          </DialogHeader>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -416,8 +418,8 @@ function DetailsBody({
     if (Object.keys(patch).length > 0) save.mutate(patch)
   }
 
-  const statusMessage =
-    detail.refresh_error?.message ?? (detail.status_message && detail.status_message !== detail.status ? detail.status_message : undefined)
+  const status = statusDetail(detail)
+  const statusMessage = status ? ("key" in status ? t(`cards.detail.${status.key}`) : status.raw) : undefined
   const formatDate = (value: unknown) => {
     if (typeof value !== "string" || !value) return "—"
     const date = new Date(value)
@@ -428,40 +430,41 @@ function DetailsBody({
 
   return (
     <>
-      <SheetHeader>
-        <SheetTitle className="truncate">{detail.email ?? detail.name}</SheetTitle>
-        <SheetDescription>
-          {t(`provider.${detail.provider}`, { defaultValue: detail.provider })} · {detail.name}
-        </SheetDescription>
-        <Button size="xs" variant="outline" className="mt-2 self-start" onClick={() => setModelsOpen(true)}>
+      <DialogHeader className="flex-row items-center gap-3 border-b px-5 py-4">
+        <ProviderIcon provider={detail.provider} />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <DialogTitle className="truncate">{detail.email ?? detail.name}</DialogTitle>
+          <DialogDescription className="truncate">
+            {t(`provider.${detail.provider}`, { defaultValue: detail.provider })} · {detail.name}
+          </DialogDescription>
+        </div>
+        <Button size="sm" variant="outline" className="mr-6" onClick={() => setModelsOpen(true)}>
           {t("details.modelsTitle")}
         </Button>
-      </SheetHeader>
+      </DialogHeader>
       {loadFailed && (
-        <Alert variant="destructive" className="mx-4">
+        <Alert variant="destructive" className="mx-5 mt-4">
           <AlertTitle>{t("details.loadFailed")}</AlertTitle>
         </Alert>
       )}
       {loading ? (
-        <div className="p-4 text-xs text-muted-foreground">{t("details.loading")}</div>
+        <div className="p-5 text-xs text-muted-foreground">{t("details.loading")}</div>
       ) : (
-        <Tabs value={tab} onValueChange={(value) => onTabChange(String(value))} className="px-4 pb-4">
+        <Tabs value={tab} onValueChange={(value) => onTabChange(String(value))} className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
           <TabsList variant="line" className="w-full">
             <TabsTrigger value="overview">{t("details.overview")}</TabsTrigger>
             <TabsTrigger value="settings">{t("details.settings")}</TabsTrigger>
             <TabsTrigger value="quota">{t("details.quota")}</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="flex flex-col gap-4 pt-4">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">{detail.provider}</Badge>
-              <Badge variant={detail.disabled ? "destructive" : "secondary"}>
-                {detail.status ?? (detail.disabled ? t("credentials.state.disabled") : t("credentials.state.active"))}
-              </Badge>
+            <div className="flex items-center gap-2 text-xs">
+              <span className={cn("size-1.5 rounded-full", stateTone[credentialState(detail)])} aria-hidden />
+              {t(`credentials.state.${credentialState(detail)}`)}
             </div>
             <InfoGrid
               items={[
                 [t("details.identity"), detail.email ?? detail.account ?? detail.name],
-                [t("details.provider"), detail.provider],
+                [t("details.provider"), t(`provider.${detail.provider}`, { defaultValue: detail.provider })],
                 [t("details.plan"), detail.plan_type],
                 [t("details.project"), detail.project_id],
                 [t("details.authIndex"), detail.auth_index],
@@ -501,7 +504,7 @@ function DetailsBody({
           </TabsContent>
         </Tabs>
       )}
-      <SheetFooter className="border-t">
+      <DialogFooter className="m-0 border-t px-5 py-3">
         <Button
           variant="outline"
           disabled={save.isPending || !dirty}
@@ -515,7 +518,7 @@ function DetailsBody({
         <Button disabled={readOnly || save.isPending || !dirty} onClick={submit}>
           {t("details.save")}
         </Button>
-      </SheetFooter>
+      </DialogFooter>
       <CredentialModelsDialog credential={detail} open={modelsOpen} onOpenChange={setModelsOpen} />
     </>
   )

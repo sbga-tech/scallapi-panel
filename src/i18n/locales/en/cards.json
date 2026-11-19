@@ -25,12 +25,20 @@
   "modified": "Modified",
   "priority": "Priority",
   "weight": "Weight",
-  "siwc": { "active": "ChatGPT sign-in in use", "bound": "ChatGPT sign-in linked", "unbound": "ChatGPT sign-in not linked" },
+  "siwc": {
+    "active": "ChatGPT sign-in in use",
+    "bound": "ChatGPT sign-in linked",
+    "unbound": "ChatGPT sign-in not linked"
+  },
   "siwcExpires": "expires {{when}}",
   "models": "Models",
   "settings": "Settings",
   "sortLabel": "Sort",
-  "sort": { "default": "By provider", "az": "By name", "priority": "By priority" },
+  "sort": {
+    "default": "By provider",
+    "az": "By name",
+    "priority": "By priority"
+  },
   "density": "Card size",
   "regular": "Full",
   "compact": "Compact",
@@ -72,5 +80,17 @@
   "pageSize": "Per page",
   "previous": "Previous page",
   "next": "Next page",
-  "pageOf": "{{page}} of {{pages}}, {{total}} accounts"
+  "pageOf": "{{page}} of {{pages}}, {{total}} accounts",
+  "detail": {
+    "signInExpired": "Sign-in expired. Sign in again to keep using this account.",
+    "quota": "Quota used up until it resets.",
+    "rateLimited": "Rate limited by the provider.",
+    "cloudflare": "Blocked by a Cloudflare check.",
+    "suspended": "The provider suspended this account.",
+    "payment": "The provider requires payment.",
+    "forbidden": "The provider denied access.",
+    "transient": "Temporary provider error.",
+    "model": "A model is unavailable on this account.",
+    "other": "Provider error, hover for details"
+  }
 }

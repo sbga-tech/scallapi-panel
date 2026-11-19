@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { queryKeys, useApiKeyFamilies, useCredentials } from "@/lib/queries"
 import type { Credential } from "@/lib/schemas"
-import { CredentialDetailsSheet } from "@/pages/credentials/details/credential-details-sheet"
+import { CredentialDetailsDialog } from "@/pages/credentials/details/credential-details-dialog"
 import { CredentialModelsDialog } from "@/pages/credentials/details/credential-models-dialog"
 import { OAuthTab, type OpenHandlers } from "@/pages/credentials/oauth-tab"
 import { ProvidersTab } from "@/pages/credentials/providers-tab"
@@ -57,7 +57,7 @@ export function CredentialsPage() {
           </>
         }
       />
-      <Tabs value={tab} onValueChange={(value) => navigate(`/credentials/${value}`)} className="flex flex-1 flex-col gap-0">
+      <Tabs value={tab} onValueChange={(value) => navigate(`/upstreams/${value}`)} className="flex flex-1 flex-col gap-0">
         <div className="border-b px-4 md:px-6">
           <TabsList variant="line" className="h-10">
             <TabsTrigger value="oauth">
@@ -77,7 +77,7 @@ export function CredentialsPage() {
           <ProvidersTab query={families} />
         </TabsContent>
       </Tabs>
-      <CredentialDetailsSheet credential={details} open={details !== null} onOpenChange={(value) => !value && setDetails(null)} />
+      <CredentialDetailsDialog credential={details} open={details !== null} onOpenChange={(value) => !value && setDetails(null)} />
       <CredentialModelsDialog credential={models} open={models !== null} onOpenChange={(value) => !value && setModels(null)} />
       {signIn && (
         <SignInDialog

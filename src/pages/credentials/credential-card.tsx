@@ -15,7 +15,8 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNow } from "@/hooks/use-now"
-import { credentialIdentity, credentialState, stateTone } from "@/lib/credential-status"
+import { ProviderIcon } from "@/components/provider-icon"
+import { credentialIdentity, credentialState, stateTone, statusDetail } from "@/lib/credential-status"
 import { formatBytes, formatDuration, formatRelative } from "@/lib/format"
 import type { Credential } from "@/lib/schemas"
 import { QuotaSummary } from "@/components/quota/quota-summary"
@@ -57,28 +58,28 @@ export function CredentialCard({
   const cooldowns = credential.cooldowns ?? []
   const now = useNow(cooldowns.length > 0)
   const receivedAt = useReceivedAt(credential)
-  const message = credential.refresh_error?.message ?? (credential.status_message !== credential.status ? credential.status_message : undefined)
+  const detail = statusDetail(credential)
   const compact = density === "compact"
   const totalRequests = credential.success + credential.failed
 
   return (
-    <Card className={cn("gap-0 p-0", selected && "ring-2 ring-ring/40")}>
-      <div className="flex items-start gap-2.5 px-4 pt-3.5">
+    <Card className={cn("h-full gap-0 p-0", selected && "ring-2 ring-ring/40")}>
+      <div className="flex items-center gap-3 px-4 pt-3.5">
         <Checkbox
-          className="mt-0.5"
           checked={selected}
           disabled={credential.runtime_only}
           onCheckedChange={(value) => onSelect(value === true)}
           aria-label={t("cards.select", { name: credential.name })}
         />
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <ProviderIcon provider={credential.provider} />
+        <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="truncate text-sm font-medium">{credentialIdentity(credential)}</span>
             {credential.runtime_only && <Badge variant="outline">{t("cards.runtimeOnly")}</Badge>}
           </div>
           <span className="truncate text-xs text-muted-foreground" title={credential.name}>
             {t(`provider.${credential.provider}`, { defaultValue: credential.provider })}
-            {credential.plan_type ? ` ${credential.plan_type}` : ""} · {credential.name}
+            {credential.plan_type ? ` ${credential.plan_type}` : ""}
           </span>
         </div>
         <Switch
@@ -96,15 +97,19 @@ export function CredentialCard({
       )}
 
       <div className="flex flex-col gap-3 px-4 py-3">
-        <div className="flex items-start gap-2 text-xs">
-          <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", stateTone[state])} aria-hidden />
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex min-h-8 items-center gap-2 text-xs">
+          <span className={cn("size-1.5 shrink-0 rounded-full", stateTone[state])} aria-hidden />
+          <div className="flex min-w-0 flex-1 flex-col">
             <span>{t(`credentials.state.${state}`)}</span>
-            {message && state !== "active" && (
-              <Tooltip>
-                <TooltipTrigger render={<span className="line-clamp-2 break-all text-muted-foreground" />}>{message}</TooltipTrigger>
-                <TooltipContent className="max-w-sm break-all">{message}</TooltipContent>
-              </Tooltip>
+            {detail && state !== "active" && state !== "disabled" && (
+              "key" in detail ? (
+                <span className="truncate text-muted-foreground">{t(`cards.detail.${detail.key}`)}</span>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger render={<span className="truncate text-muted-foreground" />}>{t("cards.detail.other")}</TooltipTrigger>
+                  <TooltipContent className="max-w-sm break-all">{detail.raw}</TooltipContent>
+                </Tooltip>
+              )
             )}
           </div>
           {credential.next_action === "sign_in" && (

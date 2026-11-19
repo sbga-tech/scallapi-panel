@@ -28,3 +28,30 @@ export function credentialState(credential: Credential): CredentialState {
 export function credentialIdentity(credential: Credential) {
   return credential.email ?? credential.label ?? credential.account ?? credential.name
 }
+
+export type StatusDetail = { key: string } | { raw: string }
+
+const detailPatterns: [RegExp, string][] = [
+  [/^disabled( via management api)?$/, ""],
+  [/invalid_grant|refresh token (invalid|not found)|unauthorized|token_expired|token expired|sign_in/, "signInExpired"],
+  [/credential_quota|quota|exhausted/, "quota"],
+  [/rate[ _]?limit/, "rateLimited"],
+  [/cloudflare/, "cloudflare"],
+  [/tos_violation|terms/, "suspended"],
+  [/payment_required|payment required/, "payment"],
+  [/forbidden/, "forbidden"],
+  [/transient|upstream 5\d\d|cooling_5\d\d|stream disconnected/, "transient"],
+  [/model disabled|model_not_supported/, "model"],
+]
+
+export function statusDetail(credential: Credential): StatusDetail | null {
+  const sources = [credential.refresh_error?.code, credential.refresh_error?.message, credential.status_message, credential.status]
+  for (const source of sources) {
+    const text = source?.trim().toLowerCase()
+    if (!text) continue
+    const match = detailPatterns.find(([pattern]) => pattern.test(text))
+    if (match) return match[1] ? { key: match[1] } : null
+  }
+  const raw = credential.refresh_error?.message ?? credential.status_message
+  return raw && raw !== credential.status ? { raw } : null
+}

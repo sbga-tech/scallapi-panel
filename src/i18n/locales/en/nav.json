@@ -4,7 +4,7 @@
     "maintain": "System"
   },
   "overview": "Overview",
-  "credentials": "Credentials",
+  "credentials": "Upstreams",
   "routes": "Routes",
   "balancing": "Load balancing",
   "models": "Models",

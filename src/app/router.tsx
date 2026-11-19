@@ -10,12 +10,12 @@ export const router = createHashRouter([
   {
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/credentials" replace /> },
-      { path: "/credentials", element: <CredentialsPage /> },
-      { path: "/credentials/:tab", element: <CredentialsPage /> },
+      { index: true, element: <Navigate to="/upstreams" replace /> },
+      { path: "/upstreams", element: <CredentialsPage /> },
+      { path: "/upstreams/:tab", element: <CredentialsPage /> },
       { path: "/routes", element: <RoutesPage /> },
       { path: "/routes/:name", element: <RoutesPage /> },
-      { path: "*", element: <Navigate to="/credentials" replace /> },
+      { path: "*", element: <Navigate to="/upstreams" replace /> },
     ],
   },
 ])

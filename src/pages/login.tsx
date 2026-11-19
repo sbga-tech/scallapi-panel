@@ -23,7 +23,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
-  if (connection) return <Navigate to="/credentials" replace />
+  if (connection) return <Navigate to="/upstreams" replace />
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -32,7 +32,7 @@ export function LoginPage() {
     try {
       await signIn({ base, key }, remember)
       const from = (location.state as { from?: string } | null)?.from
-      navigate(from && from !== "/login" ? from : "/credentials", { replace: true })
+      navigate(from && from !== "/login" ? from : "/upstreams", { replace: true })
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) setError(t("login.badKey"))
       else if (caught instanceof ApiError && caught.status === 404) setError(t("login.notScallapi"))

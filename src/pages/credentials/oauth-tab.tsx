@@ -271,7 +271,7 @@ export function OAuthTab({ query, open }: { query: UseQueryResult<Credential[]>;
           </Select>
           <ToggleGroup
             variant="outline"
-            size="sm"
+            size="default"
             value={[density]}
             onValueChange={(value) => value[0] && setDensity(z.enum(["regular", "compact"]).parse(value[0]))}
             aria-label={t("cards.density")}
@@ -281,7 +281,7 @@ export function OAuthTab({ query, open }: { query: UseQueryResult<Credential[]>;
           </ToggleGroup>
           <ToggleGroup
             variant="outline"
-            size="sm"
+            size="default"
             value={[layout]}
             onValueChange={(value) => value[0] && setLayout(z.enum(["grid", "stacked"]).parse(value[0]))}
             aria-label={t("cards.layout")}
@@ -380,7 +380,7 @@ export function OAuthTab({ query, open }: { query: UseQueryResult<Credential[]>;
         </Empty>
       )}
 
-      <div className={cn(layout === "grid" ? "grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3" : "gap-3 sm:columns-2 xl:columns-3 [&>*]:mb-3 [&>*]:break-inside-avoid")}>
+      <div className={cn(layout === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3" : "gap-3 sm:columns-2 xl:columns-3 [&>*]:mb-3 [&>*]:break-inside-avoid")}>
         {visible.map((credential) => (
           <CredentialCard
             key={`${credential.name}:${credential.auth_index ?? ""}`}

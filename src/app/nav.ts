@@ -26,7 +26,7 @@ export const navGroups: { key: string; items: NavItem[] }[] = [
     key: "operate",
     items: [
       { key: "overview", path: "/overview", icon: LayoutDashboard, ready: false },
-      { key: "credentials", path: "/credentials", icon: KeyRound, ready: true },
+      { key: "credentials", path: "/upstreams", icon: KeyRound, ready: true },
       { key: "routes", path: "/routes", icon: Waypoints, ready: true },
       { key: "balancing", path: "/balancing", icon: Scale, ready: false },
       { key: "models", path: "/models", icon: Cpu, ready: false },

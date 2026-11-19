@@ -1,7 +1,7 @@
 {
   "add": "添加路由",
   "default": "默认",
-  "defaultDescription": "其余所有路径，使用全部凭据",
+  "defaultDescription": "其余所有路径，使用全部上游",
   "loadFailed": "无法加载路由",
   "newTitle": "新路由",
   "name": "名称",
@@ -10,7 +10,7 @@
   "providers": "提供商",
   "allProviders": "未选择提供商：允许所有提供商。",
   "someProviders": "只有所选提供商的凭据会处理此路由。",
-  "credentials": "凭据",
+  "credentials": "上游",
   "save": "保存路由",
   "saved": "已保存路由 {{name}}",
   "saveFailed": "路由保存失败",
@@ -26,9 +26,9 @@
     "rewrite": "改写为必须留空，或以 / 开头且不以 / 结尾。",
     "conflict": "路由已被其他人修改，请刷新后重试。"
   },
-  "servedBy_other": "由 {{count}} 个凭据处理",
-  "allCredentials": "未选择凭据：允许的提供商下所有凭据都会处理此路由。",
-  "someCredentials_other": "只有所选的 {{count}} 个凭据处理此路由。",
+  "servedBy_other": "由 {{count}} 个上游处理",
+  "allCredentials": "未选择上游：允许的提供商下所有上游都会处理此路由。",
+  "someCredentials_other": "只有所选的 {{count}} 个上游处理此路由。",
   "oauthDetail": "OAuth 账号，{{provider}}，{{file}}",
   "apiKeyDetail_other": "API 密钥分组，{{family}}，{{count}} 个密钥",
   "state": {
