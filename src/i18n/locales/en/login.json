@@ -1,0 +1,12 @@
+{
+  "title": "Sign in to scallapi",
+  "description": "Use the management key from the server's config.",
+  "server": "Server",
+  "key": "Management key",
+  "remember": "Keep me signed in on this browser",
+  "submit": "Sign in",
+  "failed": "Couldn't sign in",
+  "badKey": "The management key is wrong.",
+  "notScallapi": "This server has no v8 management API. Check the address.",
+  "unreachable": "Can't reach {{base}}."
+}

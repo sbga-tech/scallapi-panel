@@ -1,0 +1,12 @@
+{
+  "title": "登录 scallapi",
+  "description": "使用服务器配置中的管理密钥。",
+  "server": "服务器",
+  "key": "管理密钥",
+  "remember": "在此浏览器保持登录",
+  "submit": "登录",
+  "failed": "无法登录",
+  "badKey": "管理密钥不正确。",
+  "notScallapi": "该服务器没有 v8 管理接口，请检查地址。",
+  "unreachable": "无法连接 {{base}}。"
+}

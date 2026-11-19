@@ -1,0 +1,12 @@
+{
+  "name": "名称",
+  "baseUrl": "接口地址",
+  "keys": "密钥",
+  "models": "模型",
+  "unnamed": "未命名分组",
+  "prefix": "前缀 {{prefix}}",
+  "defaultEndpoint": "提供商默认",
+  "loadFailed": "无法加载 API 提供商",
+  "emptyTitle": "还没有 API 提供商",
+  "emptyDescription": "添加的 API 密钥提供商会显示在这里。"
+}

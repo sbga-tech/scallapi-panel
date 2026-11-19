@@ -1,0 +1,12 @@
+{
+  "name": "Name",
+  "baseUrl": "Endpoint",
+  "keys": "Keys",
+  "models": "Models",
+  "unnamed": "Unnamed group",
+  "prefix": "Prefix {{prefix}}",
+  "defaultEndpoint": "Provider default",
+  "loadFailed": "Couldn't load API providers",
+  "emptyTitle": "No API providers yet",
+  "emptyDescription": "API-key providers you add appear here."
+}

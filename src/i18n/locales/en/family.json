@@ -1,0 +1,11 @@
+{
+  "openai-compatibility": "OpenAI-compatible",
+  "codex": "Codex",
+  "claude": "Claude",
+  "gemini": "Gemini",
+  "interactions": "Gemini Interactions",
+  "vertex": "Vertex",
+  "vertex-compat": "Vertex-compatible",
+  "xai": "xAI",
+  "meta": "Meta"
+}

@@ -1,0 +1,18 @@
+{
+  "group": {
+    "operate": "Gateway",
+    "maintain": "System"
+  },
+  "overview": "Overview",
+  "credentials": "Credentials",
+  "routes": "Routes",
+  "balancing": "Load balancing",
+  "models": "Models",
+  "quota": "Quota",
+  "clients": "Clients",
+  "plugins": "Plugins",
+  "logs": "Logs",
+  "usage": "Usage",
+  "settings": "Settings",
+  "system": "System"
+}

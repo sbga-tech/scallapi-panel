@@ -1,20 +1,25 @@
 import i18n from "i18next"
 import { initReactI18next } from "react-i18next"
 
-import en from "@/i18n/en.json"
-import zh from "@/i18n/zh.json"
-
 export const languages = [
   { code: "zh", label: "简体中文" },
   { code: "en", label: "English" },
 ] as const
 
+const files = import.meta.glob<{ default: Record<string, unknown> }>("./locales/*/*.json", { eager: true })
+
+const resources: Record<string, { translation: Record<string, unknown> }> = {}
+for (const [path, module] of Object.entries(files)) {
+  const [, language, section] = path.match(/\.\/locales\/([^/]+)\/([^/]+)\.json$/) ?? []
+  resources[language] ??= { translation: {} }
+  resources[language].translation[section] = module.default
+}
+
 const languageKey = "scallapi-panel.language"
-const stored = localStorage.getItem(languageKey)
-const initial = stored ?? (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en")
+const initial = localStorage.getItem(languageKey) ?? (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en")
 
 void i18n.use(initReactI18next).init({
-  resources: { en: { translation: en }, zh: { translation: zh } },
+  resources,
   lng: initial,
   fallbackLng: "en",
   interpolation: { escapeValue: false },
