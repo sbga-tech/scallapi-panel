@@ -1,21 +1,22 @@
-# React + TypeScript + Vite + shadcn/ui
+# scallapi panel
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+The admin panel for [scallapi](https://github.com/sbga-tech/scallapi). It manages credentials, endpoint routes, models, quota, plugins, logs and settings through scallapi's v8 management API. The interface is in Chinese and English.
 
-## Adding components
+The build is a single `index.html`. scallapi serves it as `management.html`, downloading it from this repository's latest release when `management.panel-github-repository` points here.
 
-To add components to your app, run the following command:
+## Development
 
-```bash
-npx shadcn@latest add button
+```sh
+bun install
+SCALLAPI_URL=http://127.0.0.1:8317 bun run dev
 ```
 
-This will place the ui components in the `src/components` directory.
+The dev server proxies `/v8` to `SCALLAPI_URL`. Sign in with the server's `management.secret-key`.
 
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
+```sh
+bun run build   # dist/index.html
+bun run lint
+bun run typecheck
 ```
+
+[docs/parity.md](docs/parity.md) lists every feature of the previous panel and every config key, with what is done.
